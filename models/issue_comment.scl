@@ -1,0 +1,15 @@
+description = "IssueComments"
+fields = {
+  title = {
+    type = "string"
+  },
+  body = {
+    type = "string",        
+  },
+  issue_member = {
+    type = "uuid"
+  },
+  issue = {
+    type = "uuid"
+  },
+}

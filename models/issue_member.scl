@@ -1,0 +1,9 @@
+description = "IssueUser"
+fields = {
+  name = {
+    type = "string"
+  },
+  issue = {
+    type = "uuid"
+  },
+}

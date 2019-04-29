@@ -1,0 +1,12 @@
+description = "IssueLabel"
+fields = {
+  title = {
+    type = "string"
+  },
+  color = {
+    type = "string"
+  },
+  issue = {
+    type = "uuid"
+  },
+}

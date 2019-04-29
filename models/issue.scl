@@ -1,0 +1,16 @@
+description = "Issue"
+fields = {
+  title = {
+    type = "string"
+  },
+  state = {
+    type = "string"
+  },
+  body = {
+    type = "string"
+  },
+  issue_member = {
+    type = "uuid",
+  },
+  
+}
