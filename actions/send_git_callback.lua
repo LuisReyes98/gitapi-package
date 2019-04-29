@@ -21,7 +21,6 @@ input_parameters = ["request"]
 
 
 local homepage = render("index.html", {
-  SITE_URL = "/",
   SITENAME = "GIT CALLBACK",
   -- client_id = settings.github_client_id, 
   -- code = request.query.code,

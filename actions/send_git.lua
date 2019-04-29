@@ -6,22 +6,21 @@ input_parameters = ["request"]
 --  GIT HUB request tests
 -- 
 
-
+-- dummy data url https://api.github.com/search/issues?q={%22lighttouch%22}&page=1&per_page=3
 
 local query = "lighttouch"
 
-local my_response = nil
+local my_response = settings.github_dummy_response.body
 
 
 -- -- 
 -- -- 
 -- -- 
-local homepage = render("index.html", {
-  SITE_URL = "/",
+local homepage = render("gitindex.html", {
   SITENAME = "GIT DISPLAY",
+  response = my_response,
+  response_json = json.from_table(my_response)
 })
-
-
 
 return {
   status = 200,
