@@ -19,7 +19,8 @@ local my_response = settings.github_dummy_response.body
 local homepage = render("gitindex.html", {
   SITENAME = "GIT DISPLAY",
   response = my_response,
-  response_json = json.from_table(my_response)
+  response_json = json.from_table(my_response),
+  issue_table_id = "my_super_original_id", -- be sure it is an string 
 })
 
 return {

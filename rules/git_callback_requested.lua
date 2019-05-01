@@ -1,4 +1,4 @@
-priority = 1
+priority = 2
 input_parameter = "request"
 events_table = ["git_callback_requested"]
 
