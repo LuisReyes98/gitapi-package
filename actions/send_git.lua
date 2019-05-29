@@ -10,25 +10,42 @@ input_parameters = ["request"]
 local cleaned_data
 local URI_URL = "https://api.github.com/search/issues?q={%22lighttouch%22}&page=1&per_page=3"
 
--- The cleaned data will be an array in which every position will have the following
--- "Status","Title","Body","Subject","Labels","Creator","Locked","Assignees","Comments","Author association","Created at","Updated at","Closed at",
-
-function load_github_api_data()
-  -- body
-  local data = {}
-  local response = send_request({
-    uri = URI_URL,
+function githubApiV3GetRequest(url)
+  return send_request({ -- get request to github API
+    uri = url,
     method = "GET",
     headers = {
       ["content-type"] = "application/json",
-      ["accept"] = "application/vnd.github.v3+json", --git hub api v3 
-      ["Accept"] = "application/vnd.github.v3+json", --git hub api v3 
+      ["accept"] = "application/vnd.github.v3+json", -- to certified that is calling git hub api v3 
+      ["Accept"] = "application/vnd.github.v3+json", -- to certified that is calling git hub api v3 
     },
   })
-  for key,value in pairs(response.body.items) do
+end
+
+-- The cleaned data will be an array in which every position will have the following
+-- "Status"+,"Title"+,"Body"+,"issue_url"+,"Labels",
+-- "Creator"+,"Locked","Assignees","Comments","Author association",
+-- "Created at","Updated at","Closed at",
+
+function loadGithubApiData()
+  -- function to load the data of ISSUES from the github api
+  local data = {} -- declaring table to return
+
+  local response = githubApiV3GetRequest(URI_URL)
+
+  for key,value in pairs(response.body.items) do 
+    --[[for each issue in the response load a table with the issue data
+      with the following parameters
+    ]] 
     table.insert(data,{
       title = value.title,
       status = value.state,
+      body = value.body,
+      issue_url = value.html_url,
+      creator = value.user.login,
+      is_locked = value.locked,
+
+      
     })
 
   end
@@ -37,7 +54,7 @@ function load_github_api_data()
 
 end
 
-cleaned_data = load_github_api_data()
+cleaned_data = loadGithubApiData()
 
 -- -- 
 -- -- 
