@@ -23,9 +23,39 @@ function githubApiV3GetRequest(url)
 end
 
 -- The cleaned data will be an array in which every position will have the following
--- "Status"+,"Title"+,"Body"+,"issue_url"+,"Labels",
--- "Creator"+,"Locked","Assignees","Comments","Author association",
--- "Created at","Updated at","Closed at",
+--[[
+  "Status",+
+  "Title",+
+  "Body",+
+  "issue_url",+
+  "Labels",+
+  "Creator",+
+  "Locked",+
+  "Assignees",
+  "Comments",
+  "Author association",
+  "Created at",+
+  "Updated at",+
+  "Closed at",+
+  ]]
+function valuePrescenceCheck( value )
+  if value then
+    return value
+  else 
+    return ""
+  end
+  -- body
+end
+
+function labelWrapper(labels)
+  -- labels : an array of issue labels from the github api
+  -- returns a string with all the labels separated by , 
+  local labelString = ""
+  for key,value in pairs(labels) do
+    labelString = labelString .. value.name .. ",\n"
+  end
+  return labelString
+end
 
 function loadGithubApiData()
   -- function to load the data of ISSUES from the github api
@@ -36,7 +66,7 @@ function loadGithubApiData()
   for key,value in pairs(response.body.items) do 
     --[[for each issue in the response load a table with the issue data
       with the following parameters
-    ]] 
+    ]]     
     table.insert(data,{
       title = value.title,
       status = value.state,
@@ -44,8 +74,10 @@ function loadGithubApiData()
       issue_url = value.html_url,
       creator = value.user.login,
       is_locked = value.locked,
-
-      
+      created_at = value.created_at,
+      updated_at = value.updated_at,
+      closed_at = valuePrescenceCheck(value.closed_at),
+      labels = labelWrapper(value.labels),
     })
 
   end
