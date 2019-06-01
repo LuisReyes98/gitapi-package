@@ -10,13 +10,22 @@ input_parameters = ["request"]
 local cleaned_data
 local processed_request = false
 local processed_to_json = false
+local search_for
 
 -- local searchKeyword = ""
-local searchKeyword = "lighttouch"
+-- local searchKeyword = "lighttouch"
+if request.query.search_for then
+  search_for = request.query.search_for
+else 
+  search_for = ""
+end
+
+-- local searchKeyword = "light"
 local dataPerPage = 10
 local pageNumber = 1
 
-local URI_URL = "https://api.github.com/search/issues?q={%22".. searchKeyword .."%22}&page=".. pageNumber .."&per_page=" .. dataPerPage
+local URI_URL = "https://api.github.com/search/issues?q={%22".. search_for .."%22}&page=".. pageNumber .."&per_page=" .. dataPerPage
+
 
 function githubApiV3GetRequest(url)
   local response
@@ -72,15 +81,21 @@ function commentsWrapper( amount_of_comments, comments_reference )
   local comments_string = ""
 
   if amount_of_comments >= 1 then
-    local comments = githubApiV3GetRequest(comments_reference)
-    if not comments.error then
-      for key,value in pairs(comments.message.body) do
-        comments_string = comments_string .."(" .. value.created_at .. ") " .. value.user.login .. ": \n" .. value.body .. "\n"
+    local comments = githubApiV3GetRequest(comments_reference) --request
+    if not comments.error then --if not errors in entry
+      for key,value in pairs(comments.message.body) do --for every entry
+        if value.user and value.body then --if the entry has proper format , sometimes the api do to excessive requests wont do it 
+          comments_string = comments_string .."(" .. value.created_at .. ") " .. value.user.login .. ": \n" .. value.body .. "\n" --formatting comments in one text string
+          -- body
+        elseif value.message then --if the api responds with a message show it 
+          return value.message
+        else --if no format or not entries found return empty
+          return ""
+        end
       end
     else
-      return ""
+      return "" -- if the request failed to be excuted return empty
     end
-
   end
 
   return comments_string
@@ -121,14 +136,19 @@ end
 function loadGithubApiData()
   -- function to load the data of ISSUES from the github api
   local data = {} -- declaring table to return
-
+  
   local response = githubApiV3GetRequest(URI_URL)
 
   if not response.error then
     -- body
     for key,value in pairs(response.message.body.items) do 
-      --[[for each issue in the response load a table with the issue data
+      --[[
+        for each issue in the response load a table with the issue data
         with the following parameters
+        
+        it is important that if a parameter is empty for it to equals to an empty string
+        like thie: "" , and not to nil value , because this will mess with the column format
+        in the front end , since lua tables won't store  key that equals to nil
       ]]     
       table.insert(data,{
         title = value.title,
@@ -165,6 +185,7 @@ local homepage = render("gitindex.html", {
   server_response = cleaned_data ,
   processed_request = processed_request,
   processed_to_json = processed_to_json,
+  search_for = search_for,
 })
 
 return {

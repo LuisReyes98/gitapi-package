@@ -7,3 +7,5 @@ and
 #request.path_segments == 1
 and
 request.method == "GET"
+or
+request.query.search_for
