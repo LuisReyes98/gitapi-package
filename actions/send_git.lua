@@ -8,7 +8,10 @@ input_parameters = ["request"]
 -- local query = "lighttouch"
 -- dummy data url https://api.github.com/search/issues?q={%22lighttouch%22}&page=1&per_page=3
 local cleaned_data
+local processed_request = false
+local processed_to_json = false
 
+-- local searchKeyword = ""
 local searchKeyword = "lighttouch"
 local dataPerPage = 10
 local pageNumber = 1
@@ -150,15 +153,18 @@ function loadGithubApiData()
   return data
 end
 
-cleaned_data = loadGithubApiData()
+processed_request, cleaned_data = pcall(loadGithubApiData)
 
+processed_to_json, cleaned_data = pcall(json.from_table,cleaned_data)
 -- -- 
 -- -- 
 -- -- 
 local homepage = render("gitindex.html", {
   SITENAME = "GIT DISPLAY",
   issue_table_id = "my_super_original_id", -- be sure it is an string 
-  git_response = json.from_table(cleaned_data),
+  server_response = cleaned_data ,
+  processed_request = processed_request,
+  processed_to_json = processed_to_json,
 })
 
 return {
