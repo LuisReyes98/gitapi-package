@@ -7,10 +7,11 @@ input_parameters = ["request"]
 -- 
 -- local query = "lighttouch"
 -- dummy data url https://api.github.com/search/issues?q={%22lighttouch%22}&page=1&per_page=3
+
 local cleaned_data
 local processed_request = false
-local processed_to_json = false
 local search_for
+local pages_header = {}
 
 -- local searchKeyword = ""
 -- local searchKeyword = "lighttouch"
@@ -20,11 +21,11 @@ else
   search_for = ""
 end
 
--- local searchKeyword = "light"
 local dataPerPage = 10
 local pageNumber = 1
 
 local URI_URL = "https://api.github.com/search/issues?q={%22".. search_for .."%22}&page=".. pageNumber .."&per_page=" .. dataPerPage
+-- local URI_URL = "https://api.github.com/search/issues?q={%22".. search_for .."%22}"
 
 
 function githubApiV3GetRequest(url)
@@ -114,29 +115,20 @@ function assigneesWrapper(assignees)
   return assigneesString
 end
 
--- The cleaned data will be an array in which every position will have the following
---[[ Table fields list
-  "Status",+
-  "Title",+
-  "Body",+
-  "issue_url",+
-  "Labels",+
-  "Creator",+
-  "Locked",+
-
-  "Assignees",
-
-  "Comments",+
-  "Author association",+
-  "Created at",+
-  "Updated at",+
-  "Closed at",+
-  ]]
+function split(s, delimiter)--split a string
+    result = {};
+    for match in (s..delimiter):gmatch("(.-)"..delimiter) do
+        table.insert(result, match);
+    end
+    return result;
+end
 
 function loadGithubApiData()
   -- function to load the data of ISSUES from the github api
   local data = {} -- declaring table to return
-  
+  data.body = {}
+  data.headers = {}
+
   local response = githubApiV3GetRequest(URI_URL)
 
   if not response.error then
@@ -150,22 +142,24 @@ function loadGithubApiData()
         like thie: "" , and not to nil value , because this will mess with the column format
         in the front end , since lua tables won't store  key that equals to nil
       ]]     
-      table.insert(data,{
-        title = value.title,
-        status = value.state,
-        body = value.body,
-        issue_url = value.html_url,
-        creator = value.user.login,
-        is_locked = value.locked,
-        created_at = value.created_at,
-        updated_at = value.updated_at,
-        closed_at = valuePrescenceCheck(value.closed_at),
-        labels = labelWrapper(value.labels),
-        author_association = value.author_association,
-        comments = commentsWrapper(value.comments,value.comments_url),
-        assignees = assigneesWrapper(value.assignees)
+      table.insert(data.body,{
+        title = value.title, --title of the issue
+        status = value.state, -- status of the issue open or close
+        body = value.body, -- main information of the issue
+        issue_url = value.html_url, -- url of the issue in git hub
+        creator = value.user.login, -- username of the creator of the issue
+        is_locked = value.locked, -- false if the issue is not locked
+        created_at = value.created_at, -- date of creation 
+        updated_at = value.updated_at, -- date of last update
+        closed_at = valuePrescenceCheck(value.closed_at), -- date in which the issue closed , empty if it is still open
+        labels = labelWrapper(value.labels), -- labels that mark the issue
+        author_association = value.author_association, -- association of the creator of the issue with the issue itself ex: member , manager,colaborator etc..
+        comments = commentsWrapper(value.comments,value.comments_url), -- comments of  the issue in the format (date)username: \n comment \n *repeat*
+        assignees = assigneesWrapper(value.assignees)-- usernames of  people assigned to the issue 
       })
-    end
+    end --endfor
+    
+    data.headers = response.message.headers.link
 
   else
     return response
@@ -173,19 +167,52 @@ function loadGithubApiData()
   return data
 end
 
+function linkPagesHeaders( link_headers )
+  link_headers = split(link_headers,",")
+  data = {}
+  log.debug("pages header")
+  local next_pos
+  local next_value
+
+  for i,link in pairs(link_headers) do
+    local word_index
+    next_pos = string.find(link,"next")
+
+    if next_pos then
+      word_index = string.find(link,"&page=")
+      -- local next_value = string.match(link,"&page=%d%d%d")
+      -- next_value = next_value + 6
+      next_value = string.sub(link,tonumber(word_index) + 6)--6 for characters in "&page="
+      log.debug("next value" .. i)
+      log.debug(next_value)
+    end
+    next_pos = nil
+  end
+
+  return link_headers
+end
+
 processed_request, cleaned_data = pcall(loadGithubApiData)
 
-processed_to_json, cleaned_data = pcall(json.from_table,cleaned_data)
+pages_header = linkPagesHeaders(cleaned_data.headers)
+
+
+-- cleaned_data = json.from_table(cleaned_data)
+-- pages_header = split(pages_header,",")
+-- for link in pairs(pages_header) do
+--   link = split(link,";")
+
+-- end
 -- -- 
 -- -- 
 -- -- 
 local homepage = render("gitindex.html", {
   SITENAME = "GIT DISPLAY",
   issue_table_id = "my_super_original_id", -- be sure it is an string 
-  server_response = cleaned_data ,
+  server_response = json.from_table(cleaned_data.body) ,
   processed_request = processed_request,
-  processed_to_json = processed_to_json,
   search_for = search_for,
+  pages_header = pages_header,
 })
 
 return {
