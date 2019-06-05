@@ -6,26 +6,35 @@ input_parameters = ["request"]
 --  GIT HUB request
 -- 
 -- local query = "lighttouch"
--- dummy data url https://api.github.com/search/issues?q={%22lighttouch%22}&page=1&per_page=3
+-- dummy data url https://api.github.com/search/issues?q={%22lighttouch%22}&page=1&per_page=10
 
+-- response data and centinel variables
 local cleaned_data
 local processed_request = false
-local search_for
+local processed_headers = false
 local pages_header = {}
+local total_pages = 0
 
--- local searchKeyword = ""
--- local searchKeyword = "lighttouch"
+-- query data
+local dataPerPage = 10
+
+local search_for
+local pageNumber
+
+if request.query.page then
+  pageNumber = tonumber(request.query.page)
+else
+  pageNumber = 1
+end
+
 if request.query.search_for then
   search_for = request.query.search_for
 else 
   search_for = ""
 end
 
-local dataPerPage = 10
-local pageNumber = 1
-
-local URI_URL = "https://api.github.com/search/issues?q={%22".. search_for .."%22}&page=".. pageNumber .."&per_page=" .. dataPerPage
--- local URI_URL = "https://api.github.com/search/issues?q={%22".. search_for .."%22}"
+local API_URL = "https://api.github.com/search/issues?q={%22".. search_for .."%22}&page=".. pageNumber .."&per_page=" .. dataPerPage
+-- local API_URL = "https://api.github.com/search/issues?q={%22".. search_for .."%22}"
 
 
 function githubApiV3GetRequest(url)
@@ -68,6 +77,7 @@ function valuePrescenceCheck( value )
   -- body
 end
 
+
 function labelWrapper(labels)
   -- labels : an array of issue labels from the github api
   -- returns a string with all the labels separated by , 
@@ -77,6 +87,7 @@ function labelWrapper(labels)
   end
   return labelString
 end
+
 
 function commentsWrapper( amount_of_comments, comments_reference )
   local comments_string = ""
@@ -102,6 +113,7 @@ function commentsWrapper( amount_of_comments, comments_reference )
   return comments_string
 end
 
+
 function assigneesWrapper(assignees)
   -- prepares a string with all the assignees names
   assigneesString = ""
@@ -115,13 +127,15 @@ function assigneesWrapper(assignees)
   return assigneesString
 end
 
+
 function split(s, delimiter)--split a string
-    result = {};
-    for match in (s..delimiter):gmatch("(.-)"..delimiter) do
-        table.insert(result, match);
-    end
-    return result;
+  result = {};
+  for match in (s..delimiter):gmatch("(.-)"..delimiter) do
+    table.insert(result, match);
+  end
+  return result;
 end
+
 
 function loadGithubApiData()
   -- function to load the data of ISSUES from the github api
@@ -129,7 +143,7 @@ function loadGithubApiData()
   data.body = {}
   data.headers = {}
 
-  local response = githubApiV3GetRequest(URI_URL)
+  local response = githubApiV3GetRequest(API_URL)
 
   if not response.error then
     -- body
@@ -160,12 +174,13 @@ function loadGithubApiData()
     end --endfor
     
     data.headers = response.message.headers.link
-
+    data.total_count = response.message.body.total_count
   else
     return response
   end
   return data
 end
+
 
 function linkPagesHeaders( link_headers )
   link_headers = split(link_headers,",")
@@ -188,19 +203,23 @@ function linkPagesHeaders( link_headers )
     end
     next_pos = nil
   end
-
   return link_headers
 end
 
+function calculatePageCount( total_items, items_per_page )
+  local floatNum = total_items / items_per_page
+  local num = math.floor(floatNum)
+  if floatNum > num  then
+    num = num + 1 
+  end
+  return num 
+end
+
 processed_request, cleaned_data = pcall(loadGithubApiData)
-
-pages_header = linkPagesHeaders(cleaned_data.headers)
-
-
--- cleaned_data = json.from_table(cleaned_data)
--- pages_header = split(pages_header,",")
--- for link in pairs(pages_header) do
---   link = split(link,";")
+if processed_request then
+  processed_headers, pages_header = pcall(linkPagesHeaders,cleaned_data.headers)
+  total_pages = calculatePageCount(tonumber(cleaned_data.total_count) ,dataPerPage )
+end
 
 -- end
 -- -- 
@@ -212,7 +231,9 @@ local homepage = render("gitindex.html", {
   server_response = json.from_table(cleaned_data.body) ,
   processed_request = processed_request,
   search_for = search_for,
+  processed_headers = processed_headers,
   pages_header = pages_header,
+  total_pages = total_pages,
 })
 
 return {

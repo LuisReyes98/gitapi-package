@@ -9,3 +9,5 @@ and
 request.method == "GET"
 or
 request.query.search_for
+or
+request.query.page
