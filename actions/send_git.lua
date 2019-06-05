@@ -19,12 +19,12 @@ local total_pages = 0
 local dataPerPage = 10
 
 local search_for
-local pageNumber
+local current_page
 
 if request.query.page then
-  pageNumber = tonumber(request.query.page)
+  current_page = tonumber(request.query.page)
 else
-  pageNumber = 1
+  current_page = 1
 end
 
 if request.query.search_for then
@@ -33,7 +33,7 @@ else
   search_for = ""
 end
 
-local API_URL = "https://api.github.com/search/issues?q={%22".. search_for .."%22}&page=".. pageNumber .."&per_page=" .. dataPerPage
+local API_URL = "https://api.github.com/search/issues?q={%22".. search_for .."%22}&page=".. current_page .."&per_page=" .. dataPerPage
 -- local API_URL = "https://api.github.com/search/issues?q={%22".. search_for .."%22}"
 
 
@@ -173,7 +173,7 @@ function loadGithubApiData()
       })
     end --endfor
     
-    data.headers = response.message.headers.link
+    -- data.headers = response.message.headers.link
     data.total_count = response.message.body.total_count
   else
     return response
@@ -182,29 +182,29 @@ function loadGithubApiData()
 end
 
 
-function linkPagesHeaders( link_headers )
-  link_headers = split(link_headers,",")
-  data = {}
-  log.debug("pages header")
-  local next_pos
-  local next_value
+-- function linkPagesHeaders( link_headers )
+--   link_headers = split(link_headers,",")
+--   data = {}
+--   log.debug("pages header")
+--   local next_pos
+--   local next_value
 
-  for i,link in pairs(link_headers) do
-    local word_index
-    next_pos = string.find(link,"next")
+--   for i,link in pairs(link_headers) do
+--     local word_index
+--     next_pos = string.find(link,"next")
 
-    if next_pos then
-      word_index = string.find(link,"&page=")
-      -- local next_value = string.match(link,"&page=%d%d%d")
-      -- next_value = next_value + 6
-      next_value = string.sub(link,tonumber(word_index) + 6)--6 for characters in "&page="
-      log.debug("next value" .. i)
-      log.debug(next_value)
-    end
-    next_pos = nil
-  end
-  return link_headers
-end
+--     if next_pos then
+--       word_index = string.find(link,"&page=")
+--       -- local next_value = string.match(link,"&page=%d%d%d")
+--       -- next_value = next_value + 6
+--       next_value = string.sub(link,tonumber(word_index) + 6)--6 for characters in "&page="
+--       log.debug("next value" .. i)
+--       log.debug(next_value)
+--     end
+--     next_pos = nil
+--   end
+--   return link_headers
+-- end
 
 function calculatePageCount( total_items, items_per_page )
   local floatNum = total_items / items_per_page
@@ -217,7 +217,7 @@ end
 
 processed_request, cleaned_data = pcall(loadGithubApiData)
 if processed_request then
-  processed_headers, pages_header = pcall(linkPagesHeaders,cleaned_data.headers)
+  -- processed_headers, pages_header = pcall(linkPagesHeaders,cleaned_data.headers)
   total_pages = calculatePageCount(tonumber(cleaned_data.total_count) ,dataPerPage )
 end
 
@@ -231,9 +231,8 @@ local homepage = render("gitindex.html", {
   server_response = json.from_table(cleaned_data.body) ,
   processed_request = processed_request,
   search_for = search_for,
-  processed_headers = processed_headers,
-  pages_header = pages_header,
   total_pages = total_pages,
+  current_page = current_page,
 })
 
 return {
