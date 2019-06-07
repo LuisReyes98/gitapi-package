@@ -218,7 +218,10 @@ end
 processed_request, cleaned_data = pcall(loadGithubApiData)
 if processed_request then
   -- processed_headers, pages_header = pcall(linkPagesHeaders,cleaned_data.headers)
-  total_pages = calculatePageCount(tonumber(cleaned_data.total_count) ,dataPerPage )
+  total_calculated, total_pages = pcall(calculatePageCount,tonumber(cleaned_data.total_count) ,dataPerPage)
+  if not total_calculated then
+    total_pages = 0
+  end
 end
 
 -- end
