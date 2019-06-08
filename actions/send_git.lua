@@ -164,8 +164,6 @@ function loadGithubApiData()
 
   local API_URL = "https://api.github.com/search/issues?q={".. search_for .. labelsSearchQuery(labels_search) .."}&page=".. current_page .."&per_page=" .. dataPerPage
 
-  log.debug(API_URL)
-
   local response = githubApiV3GetRequest(API_URL)
 
   if not response.error then
