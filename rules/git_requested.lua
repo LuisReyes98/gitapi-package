@@ -11,3 +11,5 @@ or
 request.query.search_for
 or
 request.query.page
+or
+request.query.labels
