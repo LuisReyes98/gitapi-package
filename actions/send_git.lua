@@ -6,7 +6,7 @@ input_parameters = ["request"]
 --  GIT HUB request
 --
 -- local query = "lighttouch"
--- dummy data url https://api.github.com/search/issues?q={%22lighttouch%22}&page=1&per_page=10
+-- dummy data url https://api.github.com/search/issues?q={lighttouch}&page=1&per_page=10
 
 -- response data and centinel variables
 local cleaned_data
@@ -41,20 +41,39 @@ else
 end
 
 -- local API_URL = "https://api.github.com/search/issues?q={%22".. search_for .."%22}"
+function addParameterToURL( url,name,value)
+  local url_c = url
 
+  if string.find(url_c,"?") then
+    url_c = url_c .. "&" .. name .. "=" .. value
+  else
+    url_c = url_c .. "?" .. name .. "=" .. value
+  end
+
+  return url_c
+end
 
 function githubApiV3GetRequest(url)
   local response
+  -- Authenticating app in order to increase the requests to the api
+
+  if settings.github_client_id then
+    url = addParameterToURL(url,"client_id",settings.github_client_id)
+  end
+
+  if settings.github_client_secret then
+    url = addParameterToURL(url,"client_secret",settings.github_client_secret)
+  end
+
   -- safe call
   status, response = pcall(send_request,{ -- get request to github API
     uri = url,
     method = "GET",
     headers = {
       ["content-type"] = "application/json",
-      ["accept"] = "application/vnd.github.v3+json", -- to certified that is calling git hub api v3 
-      ["Accept"] = "application/vnd.github.v3+json", -- to certified that is calling git hub api v3 
+      ["accept"] = "application/vnd.github.v3+json", -- to certified that is calling git hub api v3
     },
-  }) 
+  })
   if status then
     return {
       error = not status,
@@ -77,7 +96,7 @@ end
 function valuePrescenceCheck( value )
   if value then
     return value
-  else 
+  else
     return ""
   end
   -- body
@@ -86,10 +105,10 @@ end
 
 function labelWrapper(labels)
   -- labels : an array of issue labels from the github api
-  -- returns a string with all the labels separated by , 
+  -- returns a string with all the labels separated by ,
   local labelString = ""
   for key,value in pairs(labels) do
-    labelString = labelString .. value.name .. ",\n" --combines all labels separated by a comma "," and a new line 
+    labelString = labelString .. value.name .. ",\n" --combines all labels separated by a comma "," and a new line
   end
   return labelString
 end
@@ -104,7 +123,6 @@ function commentsWrapper( amount_of_comments, comments_reference )
       for key,value in pairs(comments.message.body) do --for every entry
         if value.user and value.body then --if the entry has proper format , sometimes the api do to excessive requests wont do it 
           comments_string = comments_string .."(" .. value.created_at .. ") " .. value.user.login .. ": \n" .. value.body .. "\n" --formatting comments in one text string
-          -- body
         elseif value.message then --if the api responds with a message show it 
           return value.message
         else --if no format or not entries found return empty
@@ -167,7 +185,7 @@ function loadGithubApiData()
   local response = githubApiV3GetRequest(API_URL)
 
   if not response.error then
-    -- body
+
     for key,value in pairs(response.message.body.items) do
       --[[
         for each issue in the response load a table with the issue data
@@ -204,9 +222,9 @@ function calculatePageCount( total_items, items_per_page )
   local floatNum = total_items / items_per_page
   local num = math.floor(floatNum)
   if floatNum > num  then
-    num = num + 1 
+    num = num + 1
   end
-  return num 
+  return num
 end
 
 processed_request, cleaned_data = pcall(loadGithubApiData) --main call to the search method
@@ -221,9 +239,9 @@ end
 -- --
 -- --
 -- --
-local homepage = render("gitindex.html", {
+local page = render("gitindex.html", {
   SITENAME = "GIT DISPLAY",
-  issue_table_id = "my_super_original_id", -- be sure it is an string 
+  issue_table_id = "my_super_original_id", -- be sure it is an string
   server_response = json.from_table(cleaned_data.body) ,
   processed_request = processed_request,
   search_for = search_for,
@@ -237,6 +255,5 @@ return {
   headers = {
     ["content-type"] = "text/html",
   },
-  body = homepage
-  
+  body = page
 }
