@@ -16,7 +16,7 @@ local pages_header = {}
 local total_pages = 0
 
 -- query data
-local dataPerPage = 10
+local ELEMENTS_PER_PAGE = 10
 
 local search_for
 local current_page
@@ -180,7 +180,7 @@ function loadGithubApiData()
   data.body = {}
   data.headers = {}
 
-  local API_URL = "https://api.github.com/search/issues?q={".. search_for .. labelsSearchQuery(labels_search) .."}&page=".. current_page .."&per_page=" .. dataPerPage
+  local API_URL = "https://api.github.com/search/issues?q={".. search_for .. labelsSearchQuery(labels_search) .."}&page=".. current_page .."&per_page=" .. ELEMENTS_PER_PAGE
 
   local response = githubApiV3GetRequest(API_URL)
 
@@ -230,7 +230,7 @@ end
 processed_request, cleaned_data = pcall(loadGithubApiData) --main call to the search method
 
 if processed_request then
-  total_calculated, total_pages = pcall(calculatePageCount,tonumber(cleaned_data.total_count) ,dataPerPage)
+  total_calculated, total_pages = pcall(calculatePageCount,tonumber(cleaned_data.total_count) ,ELEMENTS_PER_PAGE)
   if not total_calculated then
     total_pages = 0
   end
@@ -241,7 +241,9 @@ end
 -- --
 local page = render("gitindex.html", {
   SITENAME = "GIT DISPLAY",
-  issue_table_id = "my_super_original_id", -- be sure it is an string
+  issue_table_id = "git_tabulator_table", -- be sure it is a string
+  current_url = "/git",
+  data_per_page = ELEMENTS_PER_PAGE,
   server_response = json.from_table(cleaned_data.body) ,
   processed_request = processed_request,
   search_for = search_for,
